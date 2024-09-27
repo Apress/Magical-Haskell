@@ -83,9 +83,11 @@ dealInitialCards = do
         card1 <- dealCard
         card2 <- dealCard
         modifyPlayer p (\pl -> pl { playerHand = [card1, card2] })
+        showHand p
         ) =<< gets players
     dealerCard <- dealCard
     modifyDealer (\d -> d { dealerHand = [dealerCard] })
+    showDealerInitialHand
 
 modifyPlayer :: Player -> (Player -> Player) -> Game ()
 modifyPlayer player f = modify (\gs -> gs { players = map (\p -> if playerName p == playerName player then f p else p) (players gs) })
@@ -96,15 +98,17 @@ modifyDealer f = modify (\gs -> gs { dealer = f (dealer gs) })
 playerTurn :: Player -> Game ()
 playerTurn player = do
     logAction $ playerName player ++ "'s turn"
-    showHand player
     if handValue (playerHand player) == 21
         then do
+            showHand player
             logAction $ playerName player ++ " has Blackjack!"
             modifyPlayer player (\p -> p { playerMoney = playerMoney p + (playerBet p * 3 `div` 2) })
         else playerAction player
-
+        
 playerAction :: Player -> Game ()
 playerAction player = do
+    showHand player
+    showDealerInitialHand
     action <- liftIO $ do
         putStrLn $ playerName player ++ ", do you want to (H)it or (S)tand?"
         getLine
@@ -112,16 +116,20 @@ playerAction player = do
         "H" -> do
             card <- dealCard
             modifyPlayer player (\p -> p { playerHand = card : playerHand p })
-            showHand player
             let newValue = handValue (playerHand player)
             if newValue > 21
                 then do
+                    showHand player
                     logAction $ playerName player ++ " busts!"
                     modifyPlayer player (\p -> p { playerMoney = playerMoney p - playerBet p })
                 else if newValue == 21
-                    then logAction $ playerName player ++ " reaches 21!"
+                    then do
+                        showHand player
+                        logAction $ playerName player ++ " reaches 21!"
                     else playerAction player
-        "S" -> logAction $ playerName player ++ " stands."
+        "S" -> do
+            showHand player
+            logAction $ playerName player ++ " stands."
         _ -> do
             logAction "Invalid action. Please choose H or S."
             playerAction player
@@ -149,7 +157,19 @@ dealerAction = do
 showHand :: Player -> Game ()
 showHand player = do
     let hand = playerHand player
-    logAction $ playerName player ++ "'s hand: " ++ show hand ++ " (Value: " ++ show (handValue hand) ++ ")"
+    logAction $ playerName player ++ "'s hand: " ++ formatHand hand ++ " (Value: " ++ show (handValue hand) ++ ")"
+
+formatHand :: Hand -> String
+formatHand = unwords . map formatCard
+
+formatCard :: Card -> String
+formatCard (Card rank suit) = show rank ++ " of " ++ show suit
+
+showDealerInitialHand :: Game ()
+showDealerInitialHand = do
+    dealer <- gets dealer
+    let hand = dealerHand dealer
+    logAction $ "Dealer's hand: " ++ formatCard (head hand) ++ ", [Hidden]"
 
 showDealerHand :: Game ()
 showDealerHand = do
