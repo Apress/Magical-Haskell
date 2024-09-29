@@ -58,6 +58,24 @@ showDealerHand = do
     dl <- gets dealer
     liftIO $ print dl
 
+gameCycle :: Game ()
+gameCycle = do
+    playerBetAction
+    d <- gets deck
+    if (length d) < 15 
+        then do  
+            modify (\s -> s {deck = fullDeck})
+            gameCycle
+        else do
+            d' <- liftIO $ shuffleDeck d
+            modify (\s -> s {deck = d'})
+            dealCardsToPlayer 2
+            dealCardsToDealer 1
+            playerAction
+            dl <- gets dealer
+            modify (\s -> s { dealer = dl {dealerHand = []}})
+            gameCycle
+
 dealerAction :: Int -> Game ()
 dealerAction pvalue = do
     dl <- gets dealer
@@ -70,12 +88,19 @@ dealerAction pvalue = do
         else do
             showDealerHand
             liftIO $ putStrLn $ "Dealer stands with " ++ show value
-            when ((value > 21) || (value < pvalue)) $ do 
-                liftIO $ putStrLn "Player wins!"
-                pl <- gets player
-                let pl' = payout ((playerBet pl)*3) pl
-                modify (\s -> s {player = pl'})
-                showPlayerState
+            if ((value > 21) || (value < pvalue)) 
+                then do 
+                    liftIO $ putStrLn "Player wins!"
+                    pl <- gets player
+                    let pl' = payout ((playerBet pl)*3) pl
+                    modify (\s -> s {player = pl'})
+                    showPlayerState
+                else do
+                    liftIO $ putStrLn "Player looses :("
+                    pl <- gets player
+                    let pl' = payout 0 pl
+                    modify (\s -> s {player = pl'})
+                    showPlayerState
 
 playerAction :: Game ()
 playerAction = do
@@ -92,6 +117,7 @@ playerAction = do
             if newValue > 21
                 then do
                     liftIO $ putStrLn "You bust!"
+                    showPlayerState
                     let pl' = payout 0 pl
                     modify (\s -> s {player = pl'})
                     showPlayerState
@@ -99,6 +125,7 @@ playerAction = do
                 else if newValue == 21
                     then do
                         liftIO $ putStrLn "21! Paying out 2x!"
+                        showPlayerState
                         let pl' = payout ((playerBet pl)*3) pl
                         modify (\s -> s {player = pl'})
                         showPlayerState
