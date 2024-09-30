@@ -49,7 +49,7 @@ library:
   source-dirs: src
 
 executables:
-  ch09-exe:
+  bot:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
