@@ -6,6 +6,7 @@ where
 import LLM.OpenAI (ProviderData(..))
 import Data.Text (Text)
 import Network.HTTP.Client (Manager)
+import Util.Logger (LoggerState)
 
 -- type that will hold our read-only configuration data
 data Settings = Settings {
@@ -17,7 +18,8 @@ data Settings = Settings {
 data AppState = AppState {
     httpManager :: Manager,
     currentModelId :: Text,
-    currentProvider :: ProviderData
+    currentProvider :: ProviderData,
+    loggerState :: LoggerState
 }
 
 -- returns provider data (url, secrets etc) by its name

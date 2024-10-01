@@ -30,6 +30,7 @@ library
       LLM.OpenAI
       Middleware
       StackTypes
+      Util.Logger
       Util.PrettyPrinting
   other-modules:
       Paths_jarvis
@@ -45,6 +46,7 @@ library
     , conduit
     , conduit-combinators
     , dotenv
+    , fast-logger
     , haskeline
     , http-client
     , http-client-tls
@@ -71,6 +73,7 @@ executable jarvis
     , conduit
     , conduit-combinators
     , dotenv
+    , fast-logger
     , haskeline
     , http-client
     , http-client-tls
@@ -99,6 +102,7 @@ test-suite ch10-test
     , conduit
     , conduit-combinators
     , dotenv
+    , fast-logger
     , haskeline
     , http-client
     , http-client-tls

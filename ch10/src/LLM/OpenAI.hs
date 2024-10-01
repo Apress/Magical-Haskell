@@ -271,8 +271,6 @@ processString = splitOn "data: "
 
 processResp :: BS.ByteString -> IO ()
 processResp ch = do
-  let ttt = unpack ch
-  let objs = processString ttt
   mapM_
     ( \x -> do
         -- putStrLn x
@@ -288,4 +286,4 @@ processResp ch = do
               Just DeltaMessage {content = cnt} -> do
                 putStr (T.unpack cnt)
     )
-    objs
+    (processString $ unpack ch)

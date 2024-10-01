@@ -12,13 +12,14 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import qualified Data.Text as T
 import LLM.OpenAI
 
-import Middleware (Mid)
+import Middleware (Mid, lgInf)
 import StackTypes
 
 type App = HL.InputT Mid
 
 loop :: App ()
 loop = do
+  lift $ lgInf "starting up Jarvis"
   st <- lift get
   let mgr = httpManager st
   let modelId = currentModelId st

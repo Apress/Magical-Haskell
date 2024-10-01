@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, ScopedTypeVariables #-}
 
 module Init
 (initAll)
@@ -10,10 +10,9 @@ import Data.ByteString.Char8 (pack)
 import Network.HTTP.Client (Manager, newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 
-
 import StackTypes
 import LLM.OpenAI 
-
+import Util.Logger (initLogger, LogLevels (DEBUG), initLoggerFile)
 
 buildOpenAISettings :: IO ProviderData
 buildOpenAISettings = do
@@ -27,7 +26,6 @@ buildOpenAISettings = do
     providerDefaultOptions = defaultChatOptions
 }
     
-
 initConfig :: IO Settings
 initConfig = do
     loadFile defaultConfig
@@ -41,5 +39,8 @@ initAll = do
     let prov = findProviderByName settings "openai"
     print prov
     manager <- newManager tlsManagerSettings
-    let initSt = AppState manager "gpt-4o" prov
+    lglev <- lookupEnv "LOG_LEVEL"
+    let (Just lglev') :: Maybe LogLevels = maybe (Just DEBUG) read lglev
+    lgState <- initLoggerFile lglev'
+    let initSt = AppState manager "gpt-4o" prov lgState
     pure (settings, initSt)
