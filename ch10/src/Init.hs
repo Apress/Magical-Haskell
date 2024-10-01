@@ -43,5 +43,5 @@ initAll = do
     lglev <- lookupEnv "LOG_LEVEL"
     let (Just lglev') :: Maybe LogLevels = maybe (Just DEBUG) readMaybe lglev
     lgState <- initLoggerFile lglev'
-    let initSt = AppState manager "gpt-4o" prov lgState
+    let initSt = AppState manager "gpt-4o" prov lgState [] 6
     pure (settings, initSt)

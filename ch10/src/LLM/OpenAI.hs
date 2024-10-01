@@ -3,14 +3,18 @@
 
 module LLM.OpenAI
 (
-  chatCompletion, 
-  userMessage, 
-  testChunkStreaming, 
+  chatCompletion,
+  userMessage,
+  assistantMessage,
+  systemMessage,
+  testChunkStreaming,
   processResp,
   ProviderData(..),
-  defaultChatOptions)
+  defaultChatOptions, Usage(..),
+  Message(..),
+  combineObjects)
 where
-  
+
 
 import GHC.Generics (Generic)
 import Control.Monad.IO.Class (liftIO)
@@ -25,8 +29,10 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.ByteString as BS
 import Data.List.Split ( splitOn )
 import Data.Maybe (fromMaybe)
-import Conduit (mapM_C)
+import Conduit (mapM_C, foldMapMC)
 import qualified Data.Text as T
+import Util.Logger (LoggerState, lg_dbg, lg_err)
+import Control.Monad (foldM)
 
 -- Ok since we are using OpenAI api as primary, llm data is (at least for now) stored here:
 data ProviderData = ProviderData {
@@ -125,6 +131,16 @@ data Usage = Usage
 instance ToJSON Usage
 instance FromJSON Usage
 
+instance Semigroup Usage where
+  u1 <> u2 = Usage {
+    prompt_tokens = prompt_tokens u1 + prompt_tokens u2,
+    completion_tokens = completion_tokens u1 + completion_tokens u2,
+    total_tokens = total_tokens u1 + total_tokens u2
+  }
+
+instance Monoid Usage where
+  mempty = Usage 0 0 0
+
 data OpenAIResponse = OpenAIResponse
   { id :: Text
   , object :: Text
@@ -216,13 +232,13 @@ combineObjects :: Value -> Value -> Value
 combineObjects (Object obj1) (Object obj2) = Object (obj1 <> obj2)
 combineObjects _ _ = error "Both inputs must be JSON objects"
 
-chatCompletion :: Manager -> [Message] -> Text -> ProviderData -> Maybe ChatOptions -> (BS.ByteString -> IO()) -> IO ()
-chatCompletion mgr messages modelId provider opts func = do
+chatCompletion :: [Message] -> Text -> ProviderData -> Maybe ChatOptions -> LoggerState -> (BS.ByteString -> IO (String, Usage)) -> IO (String, Usage)
+chatCompletion messages modelId provider opts lgState func = do
     -- Note: parseRequest_ throws an exception on invalid URLs, so in a real application, you should handle that.
     let url = chatCompletionURL provider
     let key = providerKey provider
     let fopts = Data.Maybe.fromMaybe (providerDefaultOptions provider) opts
-    -- putStrLn $ "Calling chatCompletion with URL: " ++ url ++ " and key " ++ (show key)
+    lg_dbg ("Calling chatCompletion with URL: " ++ url) lgState
     initialRequest <- parseRequest url
     let obj = Data.Aeson.object [
                 "model" .= modelId,
@@ -237,13 +253,17 @@ chatCompletion mgr messages modelId provider opts func = do
     httpSink postRequest $ \response -> do
         if statusCode (responseStatus response) /= 200
             then do
-                liftIO $ print (responseStatus response)
-                liftIO $ print (responseHeaders response)
-                -- putStrLn $ show (responseBody response) 
-                mapM_C (putStrLn . unpack)
+                liftIO $ lg_err (show (responseStatus response)) lgState
+                liftIO $ lg_err (show (responseHeaders response)) lgState
+                foldMapMC (\x -> do 
+                                  let y = unpack x
+                                  putStr y
+                                  pure (y, mempty))
             else do
                 -- Stream the response body to stdout
-                mapM_C func
+                v <- foldMapMC func
+                liftIO $ lg_dbg ("OpenAI response: " ++ show v) lgState
+                pure v
 
 testChunk :: BS.ByteString -> IO ()
 testChunk ch = do
@@ -273,21 +293,31 @@ testChunkStreaming ch = do
 processString :: String -> [String]
 processString = splitOn "data: "
 
-processResp :: BS.ByteString -> IO ()
+processResp :: BS.ByteString -> IO (String, Usage)
 processResp ch = do
-  mapM_
-    ( \x -> do
+  foldM
+    ( \acc x -> do
         -- putStrLn x
         -- putStrLn $ "Length is: " ++ show (length x)
         let jsonObject = decode (BL.pack x) :: Maybe OpenAIResponse
         case jsonObject of
-          Nothing -> return ()
+          Nothing -> return acc
           Just resp -> do
-            let chs = delta $ head $ choices resp
-            -- dlt <- content <$> (chs :: Maybe DeltaMessage)
-            case chs of
-              Nothing -> return ()
-              Just DeltaMessage {content = cnt} -> do
-                putStr (T.unpack cnt)
+            --print resp
+            if not (null (choices resp)) then do
+              let chs = delta $ head $ choices resp
+              -- dlt <- content <$> (chs :: Maybe DeltaMessage)
+              case chs of
+                Nothing -> return acc
+                Just DeltaMessage {content = cnt} -> do
+                  let str = T.unpack cnt
+                  putStr str
+                  return (fst acc ++ str, snd acc)
+            else do 
+              -- print resp
+              let u = usage resp
+              case u of 
+                Nothing -> return acc
+                Just us -> return (fst acc, snd acc <> us)
     )
-    (processString $ unpack ch)
+    ("", mempty) (processString $ unpack ch)

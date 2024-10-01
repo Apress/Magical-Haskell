@@ -3,7 +3,7 @@
 module StackTypes
 where
     
-import LLM.OpenAI (ProviderData(..))
+import LLM.OpenAI (ProviderData(..), Message)
 import Data.Text (Text)
 import Network.HTTP.Client (Manager)
 import Util.Logger (LoggerState)
@@ -19,8 +19,11 @@ data AppState = AppState {
     httpManager :: Manager,
     currentModelId :: Text,
     currentProvider :: ProviderData,
-    loggerState :: LoggerState
+    loggerState :: LoggerState,
+    messageHistory :: [Message],
+    historySize :: Int
 }
+
 
 -- returns provider data (url, secrets etc) by its name
 findProviderByName :: Settings -> Text -> ProviderData

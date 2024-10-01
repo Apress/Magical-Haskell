@@ -6,12 +6,31 @@ module Middleware
 where
 
 import Control.Monad.RWS
-import StackTypes (Settings, AppState (AppState, loggerState), findProviderByName)
+import StackTypes (Settings, AppState (AppState, loggerState, currentModelId), findProviderByName, currentProvider, messageHistory)
 import Util.Logger
+import LLM.OpenAI (Usage, chatCompletion, Message, processResp, providerDefaultOptions, assistantMessage)
+import Data.Text (pack)
 
 -- monad that handles all application's business logic
-type Mid = RWST Settings [String] AppState IO
+type Mid = RWST Settings Usage AppState IO
 
+-- openai ---------------------------------
+
+chatCompletionMid :: Message -> Mid ()
+chatCompletionMid message = do
+    st <- get
+    let provider = currentProvider st
+    let msgs = messageHistory st
+    let messages = msgs ++ [message]
+    (asMsg, us) <- lift $ chatCompletion messages (currentModelId st) provider Nothing (loggerState st) processResp
+    let messages' = messages ++ [assistantMessage $ pack asMsg]
+    modify' (\s -> s {messageHistory = messages'})
+    tell us
+    pure ()
+    
+                
+
+-- logging --------------------------------
 lgL :: LogLevels -> String -> Mid ()
 lgL lvl msg = gets loggerState >>= liftIO . lgl lvl msg
 
