@@ -137,7 +137,12 @@ data OpenAIResponse = OpenAIResponse
 instance ToJSON OpenAIResponse
 instance FromJSON OpenAIResponse
 
+data OpenAIStreamOptions = OpenAIStreamOptions {
+  include_usage :: Bool
+} deriving (Show, Generic)
 
+instance ToJSON OpenAIStreamOptions
+instance FromJSON OpenAIStreamOptions
 
 data ChatOptions = ChatOptions {
     stream :: Bool,
@@ -162,10 +167,9 @@ data ChatOptions = ChatOptions {
     Up to 4 sequences where the API will stop generating further tokens.-}
     stop :: Maybe [Text],
     {- Options for streaming response. Only set this when you set stream: true.
-    include_usage :: boolean
     Optional
     If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. -}
-    stream_options :: Maybe Object,
+    stream_options :: Maybe OpenAIStreamOptions,
     {- What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
     We generally recommend altering this or top_p but not both. Defaults to 1 -}
     temperature :: Maybe Float,
@@ -197,7 +201,7 @@ defaultChatOptions = ChatOptions {
     response_format = Nothing,
     seed = Nothing,
     stop = Nothing,
-    stream_options = Nothing,
+    stream_options = Just (OpenAIStreamOptions True),
     temperature = Just 1,
     top_p = Nothing,
     tools = Nothing,

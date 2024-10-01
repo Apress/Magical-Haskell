@@ -13,6 +13,7 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import StackTypes
 import LLM.OpenAI 
 import Util.Logger (initLogger, LogLevels (DEBUG), initLoggerFile)
+import Text.Read (readMaybe)
 
 buildOpenAISettings :: IO ProviderData
 buildOpenAISettings = do
@@ -40,7 +41,7 @@ initAll = do
     print prov
     manager <- newManager tlsManagerSettings
     lglev <- lookupEnv "LOG_LEVEL"
-    let (Just lglev') :: Maybe LogLevels = maybe (Just DEBUG) read lglev
+    let (Just lglev') :: Maybe LogLevels = maybe (Just DEBUG) readMaybe lglev
     lgState <- initLoggerFile lglev'
     let initSt = AppState manager "gpt-4o" prov lgState
     pure (settings, initSt)

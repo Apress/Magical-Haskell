@@ -69,6 +69,18 @@ lg_dbg msg = lg  DEBUG msg [TC.lgray]
 lg_vrb :: [Char] -> LoggerState -> IO ()
 lg_vrb msg = lg  VERBOSE msg [TC.white]
 
+lgl :: LogLevels -> String -> LoggerState -> IO ()
+lgl lvl msg = lg lvl msg (getLogClr lvl)
+
+getLogClr :: LogLevels -> [String]
+getLogClr FATAL = [TC.red]
+getLogClr ERROR = [TC.lred]
+getLogClr WARNING = [TC.yellow]
+getLogClr INFO = [TC.lblue]
+getLogClr SUCCESS = [TC.green]
+getLogClr DEBUG = [TC.lgray]
+getLogClr VERBOSE = [TC.white]
+
 testLogs :: LoggerState -> IO ()
 testLogs st = do
     lg_ftl  "This is a fatal error message" st

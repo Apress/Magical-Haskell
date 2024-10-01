@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Middleware
 where
@@ -7,11 +9,12 @@ import Control.Monad.RWS
 import StackTypes (Settings, AppState (AppState, loggerState), findProviderByName)
 import Util.Logger
 
-
 -- monad that handles all application's business logic
 type Mid = RWST Settings [String] AppState IO
 
--- LOGGING --
+lgL :: LogLevels -> String -> Mid ()
+lgL lvl msg = gets loggerState >>= liftIO . lgl lvl msg
+
 lgFtl :: [Char] -> Mid ()
 lgFtl msg = gets loggerState >>= liftIO . lg_ftl msg
 lgErr :: [Char] -> Mid ()
