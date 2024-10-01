@@ -3,7 +3,7 @@
 module StackTypes
 where
     
-import LLM.OpenAI (ProviderData)
+import LLM.OpenAI (ProviderData(..))
 import Data.Text (Text)
 import Network.HTTP.Client (Manager)
 

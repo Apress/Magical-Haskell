@@ -2,18 +2,19 @@
 
 module Main (main) where
 
-import Init (initConfig)
+import Init (initAll)
 import StackTypes (findProviderByName)
 
 import Network.HTTP.Client (Manager, newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import LLM.OpenAI (chatCompletion, userMessage, testChunkStreaming, processResp)
+import System.Console.Haskeline
+import App (loop)
+import Control.Monad.RWS
 
 
 main :: IO ()
 main = do
-    settings <- initConfig
-    let prov = findProviderByName settings "openai"
-    print prov
-    manager <- newManager tlsManagerSettings
-    chatCompletion manager [userMessage "hi"] "gpt-4o" prov Nothing processResp
+    (sett, initSt) <- initAll
+    runRWST (runInputT (defaultSettings {historyFile = Just ".jarvis_history"}) loop) sett initSt
+    putStrLn "bye!"
