@@ -10,6 +10,9 @@ import Middleware (chatCompletionMid, Mid)
 import LLM.OpenAI (userMessage)
 import System.Console.Haskeline (outputStrLn, InputT)
 import Util.PrettyPrinting (as, yellow, white, bold, blue, lblue, lgreen)
+import Util.Formatting
+
+import CMark
 
 type App = InputT Mid
 
@@ -59,9 +62,12 @@ commandSendText :: [String] -> App()
 commandSendText _ = do
     txt <- currentLineBuffer <$> lift (gets uiState)
     if T.length txt > 0 then do
-        lift (chatCompletionMid $ userMessage txt)
+        (asMsg, _) <- lift (chatCompletionMid $ userMessage txt)
         uis <- lift (gets uiState)
         lift $ modify' (\s -> s { uiState = uis { currentLineBuffer = ""}})
+        -- liftIO $ formatViaLatex (T.pack asMsg)
+        let fmt = highlightCode "Markdown" (T.pack asMsg)
+        outputStrLn (T.unpack fmt)
     else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
 
 

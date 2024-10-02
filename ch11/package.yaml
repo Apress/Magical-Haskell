@@ -35,6 +35,8 @@ dependencies:
 - mtl
 - haskeline
 - fast-logger
+- skylighting
+- cmark
 
 ghc-options:
 - -Wall

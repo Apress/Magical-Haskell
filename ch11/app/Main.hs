@@ -9,6 +9,11 @@ import Control.Monad.RWS
 import Middleware (lgInf)
 import Util.PrettyPrinting (as, white, bold, yellow, lgreen)
 
+import Data.Text (Text)
+import qualified Data.Text.IO as TIO
+import Data.Maybe (fromJust)
+
+
 
 main :: IO ()
 main = do
@@ -27,7 +32,7 @@ showHeader = do
     putStrLn "Version 1.0.0"
     putStrLn ""
     putStrLn $ "For help, type " ++ as [yellow, bold] ":help"
-    putStrLn $ "In the multiline mode, type freely and then on the new line type " ++ as [yellow, bold] ":send" ++ "to send the message"
+    putStrLn $ "In the multiline mode, type freely and then on the new line type " ++ as [yellow, bold] ":send" ++ " to send the message"
     putStrLn $ "In the single-line mode, every time you hit " ++ as [lgreen, bold] "'Enter'" ++ " the message will be sent"
     putStrLn "Enjoy!"
     putStrLn ""

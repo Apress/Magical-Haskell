@@ -17,7 +17,7 @@ type Mid = RWST Settings Usage AppState IO
 
 -- openai ---------------------------------
 
-chatCompletionMid :: Message -> Mid ()
+chatCompletionMid :: Message -> Mid (String, Usage)
 chatCompletionMid message = do
     st <- get
     let provider = currentProvider st
@@ -28,6 +28,7 @@ chatCompletionMid message = do
     let messages' = messages ++ [assistantMessage $ pack asMsg]
     modify' (\s -> s {messageHistory = messages'})
     tell us
+    pure (asMsg, us)
     -- liftIO (putStrLn "" >> putStrLn (as [lgreen,bold] "[DONE]"))
     -- liftIO (putStrLn "" >> putStrLn (as [white,bold] "[User]"))
     
