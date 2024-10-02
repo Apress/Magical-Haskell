@@ -14,6 +14,12 @@ data Settings = Settings {
     version :: String
 } deriving (Show)
 
+-- various UI settings
+data UIState = UIState {
+    multilineMode :: Bool, -- multiline entry mode
+    currentLineBuffer :: Text -- current buffer if in the multiline mode
+} deriving (Show)
+
 -- type that will hold the State for our App
 data AppState = AppState {
     httpManager :: Manager,
@@ -21,8 +27,9 @@ data AppState = AppState {
     currentProvider :: ProviderData,
     loggerState :: LoggerState,
     messageHistory :: [Message],
-    historySize :: Int
-}
+    historySize :: Int,
+    uiState :: UIState
+} 
 
 
 -- returns provider data (url, secrets etc) by its name

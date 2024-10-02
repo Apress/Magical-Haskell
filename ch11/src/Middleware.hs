@@ -10,6 +10,7 @@ import StackTypes (Settings, AppState (AppState, loggerState, currentModelId), f
 import Util.Logger
 import LLM.OpenAI (Usage, chatCompletion, Message, processResp, providerDefaultOptions, assistantMessage)
 import Data.Text (pack)
+import Util.PrettyPrinting (as, white, bold, lgreen)
 
 -- monad that handles all application's business logic
 type Mid = RWST Settings Usage AppState IO
@@ -22,11 +23,13 @@ chatCompletionMid message = do
     let provider = currentProvider st
     let msgs = messageHistory st
     let messages = msgs ++ [message]
+    liftIO (putStrLn "" >> putStrLn (as [white,bold] "[Jarvis]"))
     (asMsg, us) <- lift $ chatCompletion messages (currentModelId st) provider Nothing (loggerState st) processResp
     let messages' = messages ++ [assistantMessage $ pack asMsg]
     modify' (\s -> s {messageHistory = messages'})
     tell us
-    pure ()
+    -- liftIO (putStrLn "" >> putStrLn (as [lgreen,bold] "[DONE]"))
+    -- liftIO (putStrLn "" >> putStrLn (as [white,bold] "[User]"))
     
                 
 
