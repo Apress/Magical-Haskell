@@ -37,6 +37,7 @@ dependencies:
 - fast-logger
 - skylighting
 - cmark
+- vector
 
 ghc-options:
 - -Wall

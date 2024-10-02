@@ -20,11 +20,13 @@ buildOpenAISettings = do
     -- doing pattern match because we will have checked for presence before
     (Just key) <- lookupEnv "OPENAI_TOKEN"
     (Just url) <- lookupEnv "OPENAI_URL_CHAT"
+    (Just url1)<- lookupEnv "OPENAI_URL_EMBEDDINGS"
     pure $ ProviderData {
     providerName = "openai",
     providerKey = pack key,
     chatCompletionURL = url,
-    providerDefaultOptions = defaultChatOptions
+    providerDefaultOptions = defaultChatOptions,
+    embeddingsURL = url1
 }
     
 initConfig :: IO Settings

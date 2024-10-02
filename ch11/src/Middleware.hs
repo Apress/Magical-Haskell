@@ -8,14 +8,20 @@ where
 import Control.Monad.RWS
 import StackTypes (Settings, AppState (AppState, loggerState, currentModelId), findProviderByName, currentProvider, messageHistory)
 import Util.Logger
-import LLM.OpenAI (Usage, chatCompletion, Message, processResp, providerDefaultOptions, assistantMessage)
-import Data.Text (pack)
+import LLM.OpenAI (Usage, chatCompletion, Message, processResp, providerDefaultOptions, assistantMessage, embedText, embeddingModels, embeddingName)
+import Data.Text (pack, Text)
 import Util.PrettyPrinting (as, white, bold, lgreen)
 
 -- monad that handles all application's business logic
 type Mid = RWST Settings Usage AppState IO
 
 -- openai ---------------------------------
+embedTextMid :: Text -> Mid ()
+embedTextMid txt = do
+    st <- get
+    let prov = currentProvider st
+    let mdlName = embeddingName (head embeddingModels)
+    lift $ embedText txt mdlName prov (loggerState st)
 
 chatCompletionMid :: Message -> Mid (String, Usage)
 chatCompletionMid message = do

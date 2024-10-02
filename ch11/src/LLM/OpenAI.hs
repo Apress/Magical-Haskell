@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module LLM.OpenAI
 (
@@ -12,17 +13,20 @@ module LLM.OpenAI
   ProviderData(..),
   defaultChatOptions, Usage(..),
   Message(..),
-  combineObjects)
+  combineObjects,
+  embedText,
+  embeddingModels,
+  EmbeddingDescription(..))
 where
 
 
 import GHC.Generics (Generic)
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (object, (.=), decode, FromJSON, ToJSON, toJSON, Value, Object)
-import Data.Aeson.Types (Value(..))
+import Data.Aeson (object, (.=), decode, FromJSON, ToJSON, toJSON, Value, Object, withObject, (.:))
+import Data.Aeson.Types (Value(..), FromJSON (parseJSON))
 import Data.Text (Text)
 import Network.HTTP.Client (Manager, responseStatus, parseRequest, method, responseHeaders, applyBearerAuth)
-import Network.HTTP.Simple (setRequestBodyJSON, httpSink)
+import Network.HTTP.Simple (setRequestBodyJSON, httpSink, httpJSON)
 import Network.HTTP.Types (statusCode)
 import Data.ByteString.Char8 (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -33,12 +37,15 @@ import Conduit (mapM_C, foldMapMC)
 import qualified Data.Text as T
 import Util.Logger (LoggerState, lg_dbg, lg_err)
 import Control.Monad (foldM)
+import Network.HTTP.Client (Response (responseBody))
+import qualified Data.Vector.Unboxed as V
 
 -- Ok since we are using OpenAI api as primary, llm data is (at least for now) stored here:
 data ProviderData = ProviderData {
     providerName :: Text,
     providerKey :: BS.ByteString, -- with Bearer for now to be faster
     chatCompletionURL :: String,
+    embeddingsURL :: String,
     providerDefaultOptions :: ChatOptions
 } deriving (Show)
 
@@ -53,6 +60,18 @@ availableLLMs = [
     LLMDescription 1 "openai" "gpt-4o",
     LLMDescription 2 "openai" "gpt-4o-2024-05-13"
     ]
+
+data EmbeddingDescription = EmbeddingDescription {
+  embeddingName :: Text,
+  vectorDim :: Int
+} deriving (Show)
+
+embeddingModels :: [EmbeddingDescription]
+embeddingModels = [
+    EmbeddingDescription "text-embedding-3-small" 1536,
+    EmbeddingDescription "text-embedding-3-large" 3072,
+    EmbeddingDescription "text-embedding-ada-002" 1536
+  ]
 
 {- 
 TBD:
@@ -124,22 +143,34 @@ instance FromJSON Choice
 
 data Usage = Usage
   { prompt_tokens :: Int
-  , completion_tokens :: Int
+  , completion_tokens :: Maybe Int
   , total_tokens :: Int
   } deriving (Show, Generic)
 
 instance ToJSON Usage
 instance FromJSON Usage
 
+
+-- data type for OpenAI embeddings
+data EmbeddingInput = EmbeddingInput {
+  input :: Text,
+  model :: Text
+} deriving (Show, Generic)
+
+instance ToJSON EmbeddingInput
+instance FromJSON EmbeddingInput
+
 instance Semigroup Usage where
   u1 <> u2 = Usage {
     prompt_tokens = prompt_tokens u1 + prompt_tokens u2,
-    completion_tokens = completion_tokens u1 + completion_tokens u2,
+    completion_tokens = Just $ cu1 + cu2,
     total_tokens = total_tokens u1 + total_tokens u2
-  }
+  } where
+      cu1 = fromMaybe 0 (completion_tokens u1)
+      cu2 = fromMaybe 0 (completion_tokens u2)
 
 instance Monoid Usage where
-  mempty = Usage 0 0 0
+  mempty = Usage 0 (Just 0) 0
 
 data OpenAIResponse = OpenAIResponse
   { id :: Text
@@ -152,6 +183,58 @@ data OpenAIResponse = OpenAIResponse
 
 instance ToJSON OpenAIResponse
 instance FromJSON OpenAIResponse
+
+-- Define the Embedding data type
+data EmbeddingData = EmbeddingData
+  { object  :: Text
+  , embedding :: V.Vector Float
+  , index   :: Int
+  } deriving (Show, Generic)
+
+instance ToJSON EmbeddingData
+instance FromJSON EmbeddingData
+
+-- Define the EmbeddingResponse data type
+data EmbeddingResponse = EmbeddingResponse
+  { respObject :: String
+  , respData   :: [EmbeddingData]
+  , respModel  :: String
+  , respUsage :: Usage
+  } deriving (Show, Generic)
+
+
+instance ToJSON EmbeddingResponse where
+  toJSON (EmbeddingResponse respObject respData respModel respUsage) =
+    Data.Aeson.object [ "object" .= respObject
+           , "data" .= respData
+           , "model" .= respModel
+           , "usage" .= respUsage
+           ]
+
+instance FromJSON EmbeddingResponse where
+  parseJSON = withObject "EmbeddingResponse" $ \v -> EmbeddingResponse
+    <$> v .: "object"
+    <*> v .: "data"
+    <*> v .: "model"
+    <*> v .: "usage"
+{-
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        0.0023064255,
+        -0.009327292,
+        .... (1536 floats total for ada-002)
+        -0.0028842222,
+      ],
+      "index": 0
+    }
+  ],
+  "model": "text-embedding-ada-002",
+}
+-}
 
 data OpenAIStreamOptions = OpenAIStreamOptions {
   include_usage :: Bool
@@ -232,6 +315,28 @@ combineObjects :: Value -> Value -> Value
 combineObjects (Object obj1) (Object obj2) = Object (obj1 <> obj2)
 combineObjects _ _ = error "Both inputs must be JSON objects"
 
+
+-- embedText :: Text -> Text -> ProviderData
+embedText txt mdlName prov lgState = do
+    let url = embeddingsURL prov
+    let key = providerKey prov
+    initialRequest <- parseRequest url
+    let obj = Data.Aeson.object [
+                "model" .= mdlName,
+                "input" .= txt
+            ]
+    let request = setRequestBodyJSON obj $ applyBearerAuth key initialRequest
+    resp :: Response EmbeddingResponse <- httpJSON $ request { method = "POST" }
+    if statusCode (responseStatus resp) /= 200
+            then do
+                liftIO $ lg_err (show (responseStatus resp)) lgState
+                liftIO $ lg_err (show (responseHeaders resp)) lgState
+            else do
+                -- Stream the response body to stdout
+                print $ responseBody resp
+
+
+
 chatCompletion :: [Message] -> Text -> ProviderData -> Maybe ChatOptions -> LoggerState -> (BS.ByteString -> IO (String, Usage)) -> IO (String, Usage)
 chatCompletion messages modelId provider opts lgState func = do
     -- Note: parseRequest_ throws an exception on invalid URLs, so in a real application, you should handle that.
@@ -255,7 +360,7 @@ chatCompletion messages modelId provider opts lgState func = do
             then do
                 liftIO $ lg_err (show (responseStatus response)) lgState
                 liftIO $ lg_err (show (responseHeaders response)) lgState
-                foldMapMC (\x -> do 
+                foldMapMC (\x -> do
                                   let y = unpack x
                                   putStr y
                                   pure (y, mempty))
@@ -313,10 +418,10 @@ processResp ch = do
                   let str = T.unpack cnt
                   putStr str
                   return (fst acc ++ str, snd acc)
-            else do 
+            else do
               -- print resp
               let u = usage resp
-              case u of 
+              case u of
                 Nothing -> return acc
                 Just us -> return (fst acc, snd acc <> us)
     )

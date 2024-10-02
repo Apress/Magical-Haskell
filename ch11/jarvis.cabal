@@ -59,6 +59,7 @@ library
     , skylighting
     , split
     , text
+    , vector
   default-language: Haskell2010
 
 executable jarvis
@@ -89,6 +90,7 @@ executable jarvis
     , skylighting
     , split
     , text
+    , vector
   default-language: Haskell2010
 
 test-suite ch10-test
@@ -120,4 +122,5 @@ test-suite ch10-test
     , skylighting
     , split
     , text
+    , vector
   default-language: Haskell2010
