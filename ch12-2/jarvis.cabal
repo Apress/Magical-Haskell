@@ -27,6 +27,7 @@ library
   exposed-modules:
       App
       Commands
+      Control.Monad.MRWS
       Init
       LLM.OpenAI
       Middleware
@@ -56,6 +57,7 @@ library
     , conduit
     , conduit-combinators
     , dotenv
+    , exceptions
     , fast-logger
     , haskeline
     , http-client
@@ -71,8 +73,10 @@ library
     , scotty
     , skylighting
     , split
+    , stm
     , text
     , time
+    , unliftio-core
     , unordered-containers
     , vector
     , wai
@@ -98,6 +102,7 @@ executable jarvis
     , conduit
     , conduit-combinators
     , dotenv
+    , exceptions
     , fast-logger
     , haskeline
     , http-client
@@ -114,8 +119,10 @@ executable jarvis
     , scotty
     , skylighting
     , split
+    , stm
     , text
     , time
+    , unliftio-core
     , unordered-containers
     , vector
     , wai
@@ -142,6 +149,7 @@ test-suite ch10-test
     , conduit
     , conduit-combinators
     , dotenv
+    , exceptions
     , fast-logger
     , haskeline
     , http-client
@@ -158,8 +166,10 @@ test-suite ch10-test
     , scotty
     , skylighting
     , split
+    , stm
     , text
     , time
+    , unliftio-core
     , unordered-containers
     , vector
     , wai

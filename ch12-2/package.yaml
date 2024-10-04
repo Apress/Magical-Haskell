@@ -50,6 +50,9 @@ dependencies:
 - attoparsec
 - unordered-containers
 - scientific
+- stm
+- unliftio-core
+- exceptions
 
 ghc-options:
 - -Wall

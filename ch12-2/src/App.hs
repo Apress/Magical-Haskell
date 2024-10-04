@@ -6,7 +6,7 @@ where
 
 import qualified System.Console.Haskeline as HL
 import qualified Util.PrettyPrinting as TC
-import Control.Monad.RWS ( gets, MonadTrans(lift), modify' )
+import Control.Monad.MRWS 
 import qualified Data.Text as T
 import LLM.OpenAI
 
@@ -30,6 +30,6 @@ loop = do
         Just input ->
           if ml then do
             uis <- lift (gets uiState)
-            lift $ modify' (\s -> s { uiState = uis { currentLineBuffer = currentLineBuffer uis `T.append` "\n" `T.append` T.pack input}})
+            lift $ modify (\s -> s { uiState = uis { currentLineBuffer = currentLineBuffer uis `T.append` "\n" `T.append` T.pack input}})
             loop
           else lift (chatCompletionMid $ userMessage $ T.pack input) >> loop

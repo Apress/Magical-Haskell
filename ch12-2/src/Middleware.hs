@@ -5,15 +5,16 @@
 module Middleware
 where
 
-import Control.Monad.RWS
 import StackTypes (Settings, AppState (AppState, loggerState, currentModelId), findProviderByName, currentProvider, messageHistory)
 import Util.Logger
 import LLM.OpenAI (Usage, chatCompletion, Message, processResp, providerDefaultOptions, assistantMessage, embedText, embeddingModels, embeddingName)
 import Data.Text (pack, Text)
 import Util.PrettyPrinting (as, white, bold, lgreen)
+import Control.Monad.MRWS
+import Control.Monad.RWS (lift, liftIO)
 
 -- monad that handles all application's business logic
-type Mid = RWST Settings Usage AppState IO
+type Mid = MRWST Settings Usage AppState IO
 
 -- openai ---------------------------------
 embedTextMid :: Text -> Mid ()
@@ -32,7 +33,7 @@ chatCompletionMid message = do
     liftIO (putStrLn "" >> putStrLn (as [white,bold] "[Jarvis]"))
     (asMsg, us) <- lift $ chatCompletion messages (currentModelId st) provider Nothing (loggerState st) processResp
     let messages' = messages ++ [assistantMessage $ pack asMsg]
-    modify' (\s -> s {messageHistory = messages'})
+    modify (\s -> s {messageHistory = messages'})
     tell us
     pure (asMsg, us)
     -- liftIO (putStrLn "" >> putStrLn (as [lgreen,bold] "[DONE]"))

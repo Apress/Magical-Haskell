@@ -3,7 +3,7 @@
 module Commands
 where
 import qualified Data.Text as T
-import Control.Monad.RWS ( gets, MonadTrans(lift), MonadIO (liftIO), modify' )
+import Control.Monad.MRWS
 
 import StackTypes
 import Middleware (chatCompletionMid, Mid, embedTextMid)
@@ -62,14 +62,14 @@ commandEmbed _ = do
     if T.length txt > 0 then do
         lift (embedTextMid txt)
         uis <- lift (gets uiState)
-        lift $ modify' (\s -> s { uiState = uis { currentLineBuffer = ""}})
+        lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
     else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
 
 -- toggle multiline mode on or off
 commandToggleMultiline :: [String] -> App()
 commandToggleMultiline _ = do
     uis <- lift (gets uiState)
-    lift $ modify' (\s -> s { uiState = uis {multilineMode = not (multilineMode uis)}})
+    lift $ modify (\s -> s { uiState = uis {multilineMode = not (multilineMode uis)}})
     controlMessage [lgreen] ("[INFO] Multiline mode: " ++ show (not (multilineMode uis)))
 
 -- send the text that is currently in the text buffer
@@ -79,7 +79,7 @@ commandSendText _ = do
     if T.length txt > 0 then do
         (asMsg, _) <- lift (chatCompletionMid $ userMessage txt)
         uis <- lift (gets uiState)
-        lift $ modify' (\s -> s { uiState = uis { currentLineBuffer = ""}})
+        lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
         -- liftIO $ formatViaLatex (T.pack asMsg)
         let fmt = highlightCode "Markdown" (T.pack asMsg)
         outputStrLn (T.unpack fmt)

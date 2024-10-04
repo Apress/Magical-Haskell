@@ -5,7 +5,7 @@ module Main (main) where
 import Init (initAll)
 import System.Console.Haskeline
 import App (loop)
-import Control.Monad.RWS
+import Control.Monad.MRWS
 import Middleware (lgInf)
 import Util.PrettyPrinting (as, white, bold, yellow, lgreen)
 
@@ -23,12 +23,12 @@ main :: IO ()
 main = do
     (sett, initSt) <- initAll
     wid <- forkOS $ mainServer 8080 sett initSt
-    evalRWST (lgInf "starting up Jarvis") sett initSt
+    evalMRWST (lgInf "starting up Jarvis") sett initSt
     -- res <- insertSPD (mainConnection $ mongoSettings sett) "Jarvis" "You are a the best in the world Haskell developer. You enjoy sharing your knowledge."
     -- print res
     showHeader
     putStrLn "" >> putStrLn (as [white,bold] "[User]")
-    (_, _, w) <- runRWST (runInputT (defaultSettings {historyFile = Just ".jarvis_history"}) loop) sett initSt
+    (_, _, w) <- runMRWST (runInputT (defaultSettings {historyFile = Just ".jarvis_history"}) loop) sett initSt
     putStrLn "Total usage:"
     print w
     putStrLn "Bye!"
