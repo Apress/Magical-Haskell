@@ -38,6 +38,10 @@ dependencies:
 - skylighting
 - cmark
 - vector
+- scotty
+- jwt
+- wai
+- warp
 
 ghc-options:
 - -Wall
@@ -63,6 +67,17 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - jarvis
+
+  web:
+    main:                Main.hs
+    source-dirs:         web
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - jarvis
+
 
 tests:
   ch10-test:

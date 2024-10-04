@@ -9,7 +9,7 @@
 # to be used for project dependencies. For example:
 #
 # resolver: lts-21.25
-snapshot: lts-21.25
+snapshot: lts-22.36
 # snapshot: nightly-2024-07-05
 # snapshot: ghc-9.6.6
 #
@@ -40,7 +40,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps: 
- - cmark-0.6.1@sha256:5994e5d56d286e857063375154eac4128aea835ec867955963c27237823b8085,3361
+#- cmark-0.6.1@sha256:5994e5d56d286e857063375154eac4128aea835ec867955963c27237823b8085,3361
 
 # Override default flag values for project packages and extra-deps
 # flags: {}

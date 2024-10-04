@@ -9,8 +9,9 @@
 module Util.Logger
 where
 
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.RWS (lift, when)
+import Control.Monad.RWS (lift)
 import Control.Monad.State.Lazy (StateT, put, get, MonadState, evalStateT, modify')
 import System.Log.FastLogger
 import Data.Monoid ((<>))
