@@ -20,6 +20,8 @@ import Data.Functor ((<&>))
 import Mongo.MidLayer (MongoCollection(findAll, insertOne))
 import MidMonad (Mid)
 import VectorStorage.InMemory (addRAGData, sortedSearchResults)
+import qualified Data.ByteString as T
+import qualified Data.Text as TX
 -- import Mongo.MongoRAG (insertRAGM)
 
 -- in memory storage
@@ -29,6 +31,7 @@ buildRAGM = do
     records <- findAll @RAGData
     return $ V.fromList records
 
+-- search the storage and return top n results
 searchRAGM :: Int -> Text -> Mid (V.Vector (Text, Float))
 searchRAGM n txt = do
     st <- get
@@ -38,6 +41,13 @@ searchRAGM n txt = do
     let ms = memoryStore st
     let res = sortedSearchResults n v ms
     pure res
+
+-- build context out of the RAG results with a minimum threshold
+buildContextM :: Float -> V.Vector (Text, Float) -> Mid Text
+buildContextM minScore res = do
+    let fres = V.filter (\(_, sc) -> sc >= minScore) res
+    let txt = V.foldl' (\acc v -> acc `TX.append` "\n\n" `TX.append` (fst v)) "Please use the following additional context when answering the user but only if it is relevant:\n\n" fres
+    pure txt
 
 -- openai ---------------------------------
 embedTextMid :: Text -> Mid ()

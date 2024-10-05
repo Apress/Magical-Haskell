@@ -6,8 +6,8 @@ import qualified Data.Text as T
 import Control.Monad.MRWS
 
 import StackTypes
-import Middleware (chatCompletionMid, embedTextMid, searchRAGM)
-import LLM.OpenAI (userMessage, embedText)
+import Middleware (chatCompletionMid, embedTextMid, searchRAGM, buildContextM)
+import LLM.OpenAI (userMessage, embedText, systemMessage)
 import System.Console.Haskeline (outputStrLn, InputT)
 import Util.PrettyPrinting (as, yellow, white, bold, blue, lblue, lgreen)
 import Util.Formatting
@@ -67,7 +67,7 @@ commandHelp :: App()
 commandHelp = mapM_ (controlMessage [white,bold] . helpTextShort) allCommands
 
 commandSearchRAG :: [String] -> App()
-commandSearchRAG (x:_) = 
+commandSearchRAG (x:_) =
     let n = read x :: Int
     in  _commandSearchRAG n
 commandSearchRAG _ = _commandSearchRAG 5
@@ -80,7 +80,7 @@ _commandSearchRAG n = do
         uis <- lift (gets uiState)
         lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
         controlMessage [lgreen] "[Search Results:]"
-        V.mapM_ (\(txt, score) -> controlMessage [white] ("[" ++ show score ++ "] " ++ T.unpack (T.take 80 txt))) res 
+        V.mapM_ (\(txt, score) -> controlMessage [white] ("[" ++ show score ++ "] " ++ T.unpack (T.take 80 txt))) res
     else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
 
 
@@ -106,10 +106,13 @@ commandSendText :: [String] -> App()
 commandSendText _ = do
     txt <- currentLineBuffer <$> lift (gets uiState)
     if T.length txt > 0 then do
+        -- getting RAG context
+        ctx <- lift (searchRAGM 3 txt >>= buildContextM 0.6)
+        msgs <- lift (gets messageHistory)
+        lift $ modify (\s -> s {messageHistory = systemMessage ctx : msgs} )
         (asMsg, _) <- lift (chatCompletionMid $ userMessage txt)
         uis <- lift (gets uiState)
         lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
-        -- liftIO $ formatViaLatex (T.pack asMsg)
         let fmt = highlightCode "Markdown" (T.pack asMsg)
         outputStrLn (T.unpack fmt)
     else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
