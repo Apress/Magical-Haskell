@@ -6,7 +6,7 @@
 module Middleware
 where
 
-import StackTypes (Settings (..), AppState (AppState, loggerState, currentModelId), findProviderByName, currentProvider, messageHistory)
+import StackTypes (Settings (..), AppState (AppState, loggerState, currentModelId, memoryStore), findProviderByName, currentProvider, messageHistory)
 import Util.Logger
 import LLM.OpenAI (Usage, chatCompletion, Message, processResp, providerDefaultOptions, assistantMessage, embedText, embeddingModels, embeddingName)
 import Data.Text (pack, Text)
@@ -19,13 +19,25 @@ import Mongo.Core (MongoState(..))
 import Data.Functor ((<&>))
 import Mongo.MidLayer (MongoCollection(findAll, insertOne))
 import MidMonad (Mid)
+import VectorStorage.InMemory (addRAGData, sortedSearchResults)
 -- import Mongo.MongoRAG (insertRAGM)
 
+-- in memory storage
 buildRAGM :: Mid (V.Vector RAGData)
 buildRAGM = do
     -- Explicitly specify the type application for `RAGData`
     records <- findAll @RAGData
     return $ V.fromList records
+
+searchRAGM :: Int -> Text -> Mid (V.Vector (Text, Float))
+searchRAGM n txt = do
+    st <- get
+    let prov = currentProvider st
+    let mdlName = embeddingName (head embeddingModels)
+    v <- lift $ embedText txt mdlName prov (loggerState st)
+    let ms = memoryStore st
+    let res = sortedSearchResults n v ms
+    pure res
 
 -- openai ---------------------------------
 embedTextMid :: Text -> Mid ()
@@ -34,8 +46,12 @@ embedTextMid txt = do
     let prov = currentProvider st
     let mdlName = embeddingName (head embeddingModels)
     v <- lift $ embedText txt mdlName prov (loggerState st)
-    _id <- insertOne @RAGData $ RAGData Nothing txt v
+    let obj = RAGData Nothing txt v
+    -- inserting to mongo
+    _id <- insertOne @RAGData obj
     lgDbg $ "Succesfully inserted " ++ show _id
+    -- now inserting to in-memory store
+    modify (\s -> s { memoryStore = addRAGData (memoryStore s) obj})
 
 chatCompletionMid :: Message -> Mid (String, Usage)
 chatCompletionMid message = do

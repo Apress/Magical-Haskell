@@ -14,7 +14,10 @@ import StackTypes
 import LLM.OpenAI 
 import Util.Logger (initLogger, LogLevels (DEBUG), initLoggerFile, lg_err, lg_suc)
 import Text.Read (readMaybe)
-import Mongo.Core (initMongo)
+import Mongo.Core (initMongo, MongoState (mainConnection))
+import Mongo.MongoRAG (findAllRAG)
+import qualified Data.Vector as V
+
 
 buildOpenAISettings :: IO ProviderData
 buildOpenAISettings = do
@@ -48,8 +51,9 @@ initAll = do
     lgState <- initLoggerFile lglev'
     checkEnvironment lgState
     mongoState <- initMongo lgState
+    memst <- findAllRAG $ mainConnection mongoState
     let settings' = settings { mongoSettings = mongoState}
-    let initSt = AppState manager "gpt-4o" prov lgState [] 6 (UIState True "")
+    let initSt = AppState manager "gpt-4o" prov lgState [] 6 (UIState True "") (V.fromList memst)
     pure (settings', initSt)
 
 checkEnvironmentVar lgs var = do

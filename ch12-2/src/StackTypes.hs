@@ -8,6 +8,7 @@ import Data.Text (Text)
 import Network.HTTP.Client (Manager)
 import Util.Logger (LoggerState)
 import Mongo.Core (MongoState)
+import VectorStorage.InMemory (MemoryStorage)
 
 -- type that will hold our read-only configuration data
 data Settings = Settings {
@@ -30,7 +31,8 @@ data AppState = AppState {
     loggerState :: LoggerState,
     messageHistory :: [Message],
     historySize :: Int,
-    uiState :: UIState
+    uiState :: UIState,
+    memoryStore :: MemoryStorage
 } 
 
 -- returns provider data (url, secrets etc) by its name

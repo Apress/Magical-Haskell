@@ -53,6 +53,7 @@ dependencies:
 - stm
 - unliftio-core
 - exceptions
+- vector-algorithms
 
 ghc-options:
 - -Wall

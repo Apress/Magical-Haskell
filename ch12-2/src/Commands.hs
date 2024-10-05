@@ -6,14 +6,17 @@ import qualified Data.Text as T
 import Control.Monad.MRWS
 
 import StackTypes
-import Middleware (chatCompletionMid, embedTextMid)
+import Middleware (chatCompletionMid, embedTextMid, searchRAGM)
 import LLM.OpenAI (userMessage, embedText)
 import System.Console.Haskeline (outputStrLn, InputT)
 import Util.PrettyPrinting (as, yellow, white, bold, blue, lblue, lgreen)
 import Util.Formatting
+import qualified Data.Vector as V
+
 
 import CMark
 import MidMonad (Mid)
+import Data.ByteString (unpack)
 
 type App = InputT Mid
 
@@ -39,10 +42,16 @@ allCommands = [
             commandAction = commandToggleMultiline
         },
         CommandDescription {
-            helpTextShort = ":embed -- create embeddings for the buffer text",
-            helpTextLong = ":embed -- create embeddings for the buffer text",
+            helpTextShort = ":embed -- create embeddings for the buffer text and save them to in-memory storage and mongo",
+            helpTextLong = ":embed -- create embeddings for the buffer text and save them to in-memory storage and mongo",
             commandName = "embed",
             commandAction = commandEmbed
+        },
+        CommandDescription {
+            helpTextShort = ":search n -- search in the Vector RAG and show top n items",
+            helpTextLong = ":search n -- search in the Vector RAG and show top n items",
+            commandName = "search",
+            commandAction = commandSearchRAG
         }
     ]
 
@@ -56,6 +65,24 @@ processCommand _ = controlMessage [white, bold] "No such command. Please try :he
 
 commandHelp :: App()
 commandHelp = mapM_ (controlMessage [white,bold] . helpTextShort) allCommands
+
+commandSearchRAG :: [String] -> App()
+commandSearchRAG (x:_) = 
+    let n = read x :: Int
+    in  _commandSearchRAG n
+commandSearchRAG _ = _commandSearchRAG 5
+
+_commandSearchRAG :: Int -> App()
+_commandSearchRAG n = do
+    txt <- currentLineBuffer <$> lift (gets uiState)
+    if T.length txt > 0 then do
+        res <- lift (searchRAGM n txt)
+        uis <- lift (gets uiState)
+        lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
+        controlMessage [lgreen] "[Search Results:]"
+        V.mapM_ (\(txt, score) -> controlMessage [white] ("[" ++ show score ++ "] " ++ T.unpack (T.take 80 txt))) res 
+    else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
+
 
 commandEmbed :: [String] -> App()
 commandEmbed _ = do
