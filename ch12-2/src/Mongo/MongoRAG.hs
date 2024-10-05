@@ -1,10 +1,12 @@
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables, OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Mongo.MongoRAG
 (
     RAGData(..),
     insertRAG,
-    findAllRAG
+    findAllRAG,
+    ragColName
 )
 where
 import Data.Text (Text)
@@ -16,6 +18,7 @@ import Database.MongoDB (Collection, insert, Value, find, Select (select), Curso
 import Mongo.Core (withMongoConnection, MongoConnection, MongoState (mainConnection))
 
 import qualified Data.Vector.Unboxed as U
+
 
 data RAGData = RAGData {
     title::Maybe Text,

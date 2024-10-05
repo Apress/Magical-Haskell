@@ -10,9 +10,10 @@ import Control.Monad.MRWS
 import qualified Data.Text as T
 import LLM.OpenAI
 
-import Middleware (Mid, lgInf, chatCompletionMid)
+import Middleware (lgInf, chatCompletionMid)
 import StackTypes
 import Commands (processCommand, App, isMultilineOn, controlMessage)
+import MidMonad
 
 
 loop :: App ()

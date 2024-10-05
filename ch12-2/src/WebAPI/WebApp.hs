@@ -5,7 +5,8 @@
 module WebAPI.WebApp
 where
 
-import Middleware (Mid, lgDbg)
+import MidMonad
+import Middleware (lgDbg)
 import Web.Scotty.Trans (ScottyT, scottyT, get, text, status, ActionT, middleware)
 import qualified Web.Scotty.Trans as SC
 import Network.Wai (Response, Request (..))

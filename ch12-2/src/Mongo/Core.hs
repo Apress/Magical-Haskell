@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, NamedFieldPuns, FlexibleContexts #-}
 
+
 module Mongo.Core
 (
     MongoConnection,
@@ -25,6 +26,7 @@ import Control.Monad.Except (throwError)
 import qualified Util.AesonBson as AB
 
 import Util.Logger
+
 
 
 
@@ -54,6 +56,7 @@ data MongoString = MongoString {
 data MongoState = MongoState {
     mainConnection :: MongoConnection
 }
+
 
 
 

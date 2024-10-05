@@ -31,8 +31,10 @@ library
       Init
       LLM.OpenAI
       Middleware
+      MidMonad
       Misc.TypeFam
       Mongo.Core
+      Mongo.MidLayer
       Mongo.MongoRAG
       Mongo.SystemPrompts
       StackTypes

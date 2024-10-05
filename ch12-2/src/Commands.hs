@@ -6,13 +6,14 @@ import qualified Data.Text as T
 import Control.Monad.MRWS
 
 import StackTypes
-import Middleware (chatCompletionMid, Mid, embedTextMid)
+import Middleware (chatCompletionMid, embedTextMid)
 import LLM.OpenAI (userMessage, embedText)
 import System.Console.Haskeline (outputStrLn, InputT)
 import Util.PrettyPrinting (as, yellow, white, bold, blue, lblue, lgreen)
 import Util.Formatting
 
 import CMark
+import MidMonad (Mid)
 
 type App = InputT Mid
 

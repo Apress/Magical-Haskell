@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Middleware
 where
@@ -16,20 +17,15 @@ import Mongo.MongoRAG
 import qualified Database.MongoDB
 import Mongo.Core (MongoState(..))
 import Data.Functor ((<&>))
+import Mongo.MidLayer (MongoCollection(findAll, insertOne))
+import MidMonad (Mid)
 -- import Mongo.MongoRAG (insertRAGM)
 
--- monad that handles all application's business logic
-type Mid = MRWST Settings Usage AppState IO
-
-insertRAGM :: RAGData -> Mid Database.MongoDB.Value
-insertRAGM rgd = do
-    conn <- mainConnection <$> asks mongoSettings
-    liftIO $ insertRAG conn rgd
-
 buildRAGM :: Mid (V.Vector RAGData)
-buildRAGM = (asks mongoSettings >>= (liftIO . findAllRAG) . mainConnection) 
-    <&> V.fromList
-
+buildRAGM = do
+    -- Explicitly specify the type application for `RAGData`
+    records <- findAll @RAGData
+    return $ V.fromList records
 
 -- openai ---------------------------------
 embedTextMid :: Text -> Mid ()
@@ -38,7 +34,7 @@ embedTextMid txt = do
     let prov = currentProvider st
     let mdlName = embeddingName (head embeddingModels)
     v <- lift $ embedText txt mdlName prov (loggerState st)
-    _id <- insertRAGM $ RAGData Nothing txt v
+    _id <- insertOne @RAGData $ RAGData Nothing txt v
     lgDbg $ "Succesfully inserted " ++ show _id
 
 chatCompletionMid :: Message -> Mid (String, Usage)
