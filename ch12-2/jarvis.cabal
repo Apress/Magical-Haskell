@@ -31,7 +31,9 @@ library
       Init
       LLM.OpenAI
       Middleware
+      Misc.TypeFam
       Mongo.Core
+      Mongo.MongoRAG
       Mongo.SystemPrompts
       StackTypes
       Util.AesonBson

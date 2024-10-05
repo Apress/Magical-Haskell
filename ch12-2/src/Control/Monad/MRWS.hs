@@ -14,6 +14,7 @@ tell,
 get,
 gets,
 modify,
+modify',
 R.lift,
 R.liftIO)
 where
@@ -72,7 +73,6 @@ _modify f = R.ask >>= R.liftIO . atomically . flip modifyTVar' f . snd
 -- READER INTERFACE is semi-AUTOMATIC thanks to deriving MonadReader --
 -- But we need to extract and manipulate with data a bit to make it
 -- "really" like Reader:
-
 ask :: Monad m => MRWST r w s m r
 ask = R.asks fst
 
@@ -92,6 +92,9 @@ gets sel = sel <$> get
 
 modify :: R.MonadIO m => (s -> s) -> MRWST r w s m ()
 modify func = _modify (first func)
+
+modify' :: R.MonadIO m => (s -> s) -> MRWST r w s m ()
+modify' = modify
 
 
 

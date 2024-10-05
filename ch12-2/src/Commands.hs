@@ -63,6 +63,7 @@ commandEmbed _ = do
         lift (embedTextMid txt)
         uis <- lift (gets uiState)
         lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
+        controlMessage [lgreen] "[SUCCESS] Embedded"
     else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
 
 -- toggle multiline mode on or off

@@ -22,8 +22,6 @@ data UIState = UIState {
     currentLineBuffer :: Text -- current buffer if in the multiline mode
 } deriving (Show)
 
-
-
 -- type that will hold the State for our App
 data AppState = AppState {
     httpManager :: Manager,
@@ -34,7 +32,6 @@ data AppState = AppState {
     historySize :: Int,
     uiState :: UIState
 } 
-
 
 -- returns provider data (url, secrets etc) by its name
 findProviderByName :: Settings -> Text -> ProviderData

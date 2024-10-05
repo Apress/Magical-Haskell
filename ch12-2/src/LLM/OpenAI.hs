@@ -316,7 +316,7 @@ combineObjects (Object obj1) (Object obj2) = Object (obj1 <> obj2)
 combineObjects _ _ = error "Both inputs must be JSON objects"
 
 
--- embedText :: Text -> Text -> ProviderData
+embedText :: Text -> Text -> ProviderData -> LoggerState -> IO (V.Vector Float)
 embedText txt mdlName prov lgState = do
     let url = embeddingsURL prov
     let key = providerKey prov
@@ -331,9 +331,13 @@ embedText txt mdlName prov lgState = do
             then do
                 liftIO $ lg_err (show (responseStatus resp)) lgState
                 liftIO $ lg_err (show (responseHeaders resp)) lgState
+                pure $ V.fromList []
             else do
                 -- Stream the response body to stdout
-                print $ responseBody resp
+                let bd = responseBody resp
+                let vc = embedding $ head (respData bd)
+                liftIO $ lg_dbg (show bd) lgState 
+                pure vc
 
 
 

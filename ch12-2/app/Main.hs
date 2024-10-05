@@ -4,6 +4,10 @@ module Main (main) where
 
 import Init (initAll)
 import System.Console.Haskeline
+    ( defaultSettings,
+      noCompletion,
+      runInputT)
+import qualified System.Console.Haskeline as HL
 import App (loop)
 import Control.Monad.MRWS
 import Middleware (lgInf)
@@ -28,7 +32,8 @@ main = do
     -- print res
     showHeader
     putStrLn "" >> putStrLn (as [white,bold] "[User]")
-    (_, _, w) <- runMRWST (runInputT (defaultSettings {historyFile = Just ".jarvis_history"}) loop) sett initSt
+    let hset = HL.Settings {HL.historyFile = Just ".jarvis_history", HL.complete = noCompletion, HL.autoAddHistory=True}
+    (_, _, w) <- runMRWST (runInputT hset loop) sett initSt
     putStrLn "Total usage:"
     print w
     putStrLn "Bye!"
