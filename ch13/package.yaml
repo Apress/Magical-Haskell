@@ -54,6 +54,7 @@ dependencies:
 - unliftio-core
 - exceptions
 - vector-algorithms
+- containers
 
 ghc-options:
 - -Wall

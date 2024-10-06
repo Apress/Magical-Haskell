@@ -28,6 +28,7 @@ library
       App
       Commands
       Control.Monad.MRWS
+      Errors.Sample
       Init
       Integrail.API
       LLM.OpenAI
@@ -46,6 +47,7 @@ library
       Util.Logger
       Util.PrettyPrinting
       VectorStorage.InMemory
+      WebAPI.JWT
       WebAPI.WebApp
   other-modules:
       Paths_jarvis
@@ -63,6 +65,7 @@ library
     , cmark
     , conduit
     , conduit-combinators
+    , containers
     , dotenv
     , exceptions
     , fast-logger
@@ -109,6 +112,7 @@ executable jarvis
     , cmark
     , conduit
     , conduit-combinators
+    , containers
     , dotenv
     , exceptions
     , fast-logger
@@ -157,6 +161,7 @@ test-suite ch10-test
     , cmark
     , conduit
     , conduit-combinators
+    , containers
     , dotenv
     , exceptions
     , fast-logger

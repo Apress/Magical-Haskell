@@ -38,6 +38,8 @@ buildIntegrailSettings :: IO IntegrailData
 buildIntegrailSettings = do
     (Just key) <- lookupEnv "INTEGRAIL_TOKEN"
     (Just url) <- lookupEnv "INTEGRAIL_API_URL"
+    ags <- lookupEnv "INTEGRAIL_AGENTS"
+    print ags
     pure $ IntegrailData {
         apiURL = url,
         integrailKey = pack key
@@ -84,5 +86,7 @@ checkEnvironment lgs = mapM_ (checkEnvironmentVar lgs) [
         "OPENAI_URL_EMBEDDINGS",
         "MAIN_MONGO_URI",
         "INTEGRAIL_TOKEN",
-        "INTEGRAIL_API_URL"
+        "INTEGRAIL_API_URL",
+        "INTEGRAIL_CLIENT_ID",
+        "INTEGRAIL_AGENTS"
     ]
