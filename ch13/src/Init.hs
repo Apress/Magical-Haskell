@@ -17,6 +17,7 @@ import Text.Read (readMaybe)
 import Mongo.Core (initMongo, MongoState (mainConnection))
 import Mongo.MongoRAG (findAllRAG)
 import qualified Data.Vector as V
+import Integrail.API (IntegrailData (IntegrailData, apiURL, integrailKey))
 
 
 buildOpenAISettings :: IO ProviderData
@@ -32,12 +33,24 @@ buildOpenAISettings = do
     providerDefaultOptions = defaultChatOptions,
     embeddingsURL = url1
 }
+
+buildIntegrailSettings :: IO IntegrailData
+buildIntegrailSettings = do
+    (Just key) <- lookupEnv "INTEGRAIL_TOKEN"
+    (Just url) <- lookupEnv "INTEGRAIL_API_URL"
+    pure $ IntegrailData {
+        apiURL = url,
+        integrailKey = pack key
+    }
     
 initConfig :: IO Settings
 initConfig = do
     loadFile defaultConfig
     oa <- buildOpenAISettings
-    pure $ Settings { llmProviders = [oa], version="0.0.1"}
+    ins <- buildIntegrailSettings
+    pure $ Settings { llmProviders = [oa], 
+        version="0.0.1",
+        integrailSettings = Just ins}
 
 -- main initialization function in IO to create initial State and Settings
 initAll :: IO (Settings, AppState)
@@ -69,5 +82,7 @@ checkEnvironment lgs = mapM_ (checkEnvironmentVar lgs) [
         "OPENAI_URL_MODELS",
         "TEST_ERROR",
         "OPENAI_URL_EMBEDDINGS",
-        "MAIN_MONGO_URI"
+        "MAIN_MONGO_URI",
+        "INTEGRAIL_TOKEN",
+        "INTEGRAIL_API_URL"
     ]

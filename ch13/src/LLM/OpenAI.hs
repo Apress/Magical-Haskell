@@ -43,7 +43,7 @@ import qualified Data.Vector.Unboxed as V
 -- Ok since we are using OpenAI api as primary, llm data is (at least for now) stored here:
 data ProviderData = ProviderData {
     providerName :: Text,
-    providerKey :: BS.ByteString, -- with Bearer for now to be faster
+    providerKey :: BS.ByteString, 
     chatCompletionURL :: String,
     embeddingsURL :: String,
     providerDefaultOptions :: ChatOptions

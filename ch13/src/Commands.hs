@@ -6,12 +6,15 @@ import qualified Data.Text as T
 import Control.Monad.MRWS
 
 import StackTypes
-import Middleware (chatCompletionMid, embedTextMid, searchRAGM, buildContextM)
+import Middleware (chatCompletionMid, embedTextMid, searchRAGM, buildContextM, callAgentMid)
 import LLM.OpenAI (userMessage, embedText, systemMessage)
 import System.Console.Haskeline (outputStrLn, InputT)
 import Util.PrettyPrinting (as, yellow, white, bold, blue, lblue, lgreen)
 import Util.Formatting
 import qualified Data.Vector as V
+import qualified Data.Aeson as AE
+import Data.Aeson ((.=))
+
 
 
 import CMark
@@ -52,6 +55,12 @@ allCommands = [
             helpTextLong = ":search n -- search in the Vector RAG and show top n items",
             commandName = "search",
             commandAction = commandSearchRAG
+        },
+        CommandDescription {
+            helpTextShort = ":agent -- call integrail agent",
+            helpTextLong = ":agent -- call integrail agent",
+            commandName = "agent",
+            commandAction = commandCallAgent
         }
     ]
 
@@ -65,6 +74,20 @@ processCommand _ = controlMessage [white, bold] "No such command. Please try :he
 
 commandHelp :: App()
 commandHelp = mapM_ (controlMessage [white,bold] . helpTextShort) allCommands
+
+commandCallAgent :: [String] -> App()
+commandCallAgent _ = do
+    txt <- currentLineBuffer <$> lift (gets uiState)
+    if T.length txt > 0 then do
+        let obj = AE.object [
+                    "userPrompt" .= txt
+                ]
+        lift (callAgentMid obj)
+        uis <- lift (gets uiState)
+        lift $ modify (\s -> s { uiState = uis { currentLineBuffer = ""}})
+        --let fmt = highlightCode "Markdown" (T.pack asMsg)
+        --outputStrLn (T.unpack fmt)
+    else controlMessage [yellow] "[WARNING] Your message is empty, please type something first"
 
 commandSearchRAG :: [String] -> App()
 commandSearchRAG (x:_) =

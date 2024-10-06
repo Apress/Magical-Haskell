@@ -29,6 +29,7 @@ library
       Commands
       Control.Monad.MRWS
       Init
+      Integrail.API
       LLM.OpenAI
       Middleware
       MidMonad

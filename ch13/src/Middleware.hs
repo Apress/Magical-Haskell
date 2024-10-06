@@ -22,6 +22,9 @@ import MidMonad (Mid)
 import VectorStorage.InMemory (addRAGData, sortedSearchResults)
 import qualified Data.ByteString as T
 import qualified Data.Text as TX
+import qualified Data.Aeson as AE
+import Integrail.API (callAgentStreaming, processRespInt)
+import Control.Monad (void)
 -- import Mongo.MongoRAG (insertRAGM)
 
 -- in memory storage
@@ -48,6 +51,18 @@ buildContextM minScore res = do
     let fres = V.filter (\(_, sc) -> sc >= minScore) res
     let txt = V.foldl' (\acc v -> acc `TX.append` "\n\n" `TX.append` (fst v)) "Please use the following additional context when answering the user but only if it is relevant:\n\n" fres
     pure txt
+
+-- integrail ------------------------------
+callAgentMid :: AE.Value -> Mid ()
+callAgentMid inp = do
+    let agentId = "N2jB2ZX35mDWXw8Z4"
+    lgs <- gets loggerState
+    ind <- asks integrailSettings
+    maybe (liftIO $ putStrLn "Integrail Key and / or API URL not found. Please register at https://integrail.ai and fill in the .env file")
+          (\ind' -> liftIO $ void (callAgentStreaming ind' inp agentId lgs processRespInt))
+          ind
+
+
 
 -- openai ---------------------------------
 embedTextMid :: Text -> Mid ()

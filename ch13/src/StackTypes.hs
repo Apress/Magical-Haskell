@@ -9,12 +9,14 @@ import Network.HTTP.Client (Manager)
 import Util.Logger (LoggerState)
 import Mongo.Core (MongoState)
 import VectorStorage.InMemory (MemoryStorage)
+import Integrail.API (IntegrailData)
 
 -- type that will hold our read-only configuration data
 data Settings = Settings {
     llmProviders :: [ProviderData],
     version :: String,
-    mongoSettings :: MongoState
+    mongoSettings :: MongoState,
+    integrailSettings :: Maybe IntegrailData
 } 
 
 -- various UI settings
