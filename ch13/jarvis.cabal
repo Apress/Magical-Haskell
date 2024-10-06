@@ -37,6 +37,8 @@ library
       Mongo.MidLayer
       Mongo.MongoRAG
       Mongo.SystemPrompts
+      Nodes.Arrows
+      Nodes.Simple
       StackTypes
       Util.AesonBson
       Util.Formatting
